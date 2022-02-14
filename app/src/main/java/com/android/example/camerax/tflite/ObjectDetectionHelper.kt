@@ -17,6 +17,7 @@
 package com.android.example.camerax.tflite
 
 import android.graphics.RectF
+import android.util.Log
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.image.TensorImage
 
@@ -28,15 +29,13 @@ class ObjectDetectionHelper(private val tflite: Interpreter, private val labels:
     /** Abstraction object that wraps a prediction output in an easy to parse way */
     data class ObjectPrediction(val location: RectF, val label: String, val score: Float)
 
-    private val locations = arrayOf(Array(OBJECT_COUNT) { FloatArray(4) })
-    private val labelIndices =  arrayOf(FloatArray(OBJECT_COUNT))
+    private val locations = arrayOf(Array(OBJECT_COUNT) { FloatArray(16) })
+    private val labelIndices =  arrayOf(Array(OBJECT_COUNT){ FloatArray(1) })
     private val scores =  arrayOf(FloatArray(OBJECT_COUNT))
 
     private val outputBuffer = mapOf(
         0 to locations,
-        1 to labelIndices,
-        2 to scores,
-        3 to FloatArray(1)
+        1 to labelIndices
     )
 
     val predictions get() = (0 until OBJECT_COUNT).map {
@@ -50,7 +49,7 @@ class ObjectDetectionHelper(private val tflite: Interpreter, private val labels:
             // SSD Mobilenet V1 Model assumes class 0 is background class
             // in label file and class labels start from 1 to number_of_classes+1,
             // while outputClasses correspond to class index from 0 to number_of_classes
-            label = labels[1 + labelIndices[0][it].toInt()],
+            label = "",//labels[1 + labelIndices[0]][it]],
 
             // Score is a single value of [0, 1]
             score = scores[0][it]
@@ -58,11 +57,13 @@ class ObjectDetectionHelper(private val tflite: Interpreter, private val labels:
     }
 
     fun predict(image: TensorImage): List<ObjectPrediction> {
+        println("${image.height}, ${image.width}")
+        Log.d("ImgBuffer", "${image.buffer.get()}")
         tflite.runForMultipleInputsOutputs(arrayOf(image.buffer), outputBuffer)
         return predictions
     }
 
     companion object {
-        const val OBJECT_COUNT = 10
+        const val OBJECT_COUNT = 896
     }
 }

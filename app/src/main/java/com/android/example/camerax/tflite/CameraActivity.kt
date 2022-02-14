@@ -17,6 +17,7 @@
 package com.android.example.camerax.tflite
 
 import android.Manifest
+import android.R.attr
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
@@ -49,6 +50,7 @@ import org.tensorflow.lite.support.image.ops.Rot90Op
 import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.random.Random
+import android.R.attr.bitmap
 
 
 /** Activity that displays the camera and performs object detection on the incoming frames */
@@ -61,12 +63,12 @@ class CameraActivity : AppCompatActivity() {
     private val permissions = listOf(Manifest.permission.CAMERA)
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
-    private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
+    private var lensFacing: Int = CameraSelector.LENS_FACING_FRONT
     private val isFrontFacing get() = lensFacing == CameraSelector.LENS_FACING_FRONT
 
     private var pauseAnalysis = false
     private var imageRotationDegrees: Int = 0
-    private val tfImageBuffer = TensorImage(DataType.UINT8)
+    private val tfImageBuffer = TensorImage(DataType.FLOAT32)
 
     private val tfImageProcessor by lazy {
         val cropSize = minOf(bitmapBuffer.width, bitmapBuffer.height)
@@ -141,13 +143,14 @@ class CameraActivity : AppCompatActivity() {
 
             // Set up the view finder use case to display camera preview
             val preview = Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(view_finder.display.rotation)
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setTargetRotation(view_finder.display.rotation) // TODO: Rotation 막아야함
                 .build()
 
             // Set up the image analysis use case which will process frames in real time
             val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setTargetResolution(Size(1280, 720))
+//                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
                 .setTargetRotation(view_finder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
@@ -323,7 +326,8 @@ class CameraActivity : AppCompatActivity() {
         private val TAG = CameraActivity::class.java.simpleName
 
         private const val ACCURACY_THRESHOLD = 0.5f
-        private const val MODEL_PATH = "coco_ssd_mobilenet_v1_1.0_quant.tflite"
+        private const val MODEL_PATH = "face_detection_front.tflite"
+        private const val MODEL_PATH2 = "coco_ssd_mobilenet_v1_1.0_quant.tflite"
         private const val LABELS_PATH = "coco_ssd_mobilenet_v1_1.0_labels.txt"
     }
 }
